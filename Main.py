@@ -15,6 +15,12 @@ VEHICLE_IMAGES_DIR = 'TrainingData/Vehicles'
 NON_VEHICLE_IMAGES_DIR = 'TrainingData/NonVehicles'
 
 
+class Window:
+    def __init__(self, bbox, weight):
+        self.bbox = bbox
+        self.weight = weight
+
+
 def create_model():
     model = Sequential()
     model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(64, 64, 3)))
@@ -78,7 +84,7 @@ def draw_boxes(img, windows, color=(0, 0, 255), thick=6):
         cv2.rectangle(img, window[0], window[1], color, thick)
 
 
-def slide_window(img_shape, x_start_stop, y_start_stop, xy_window, xy_overlap):
+def slide_window(img_shape, x_start_stop, y_start_stop, xy_window, xy_overlap, weight):
     img_width = img_shape[1]
     img_height = img_shape[0]
 
@@ -117,16 +123,17 @@ def slide_window(img_shape, x_start_stop, y_start_stop, xy_window, xy_overlap):
             left_top = (np.int(x_start + x * x_step), np.int(y_start + y * y_step))
             right_bottom = (np.int(left_top[0] + xy_window[0]), np.int(left_top[1] + xy_window[1]))
             if right_bottom[0] <= img_width and right_bottom[1] <= img_height:
-                window_list.append((left_top, right_bottom))
+                window = Window((left_top, right_bottom), weight)
+                window_list.append(window)
 
     return window_list
 
 
 def create_search_windows(img_shape):
     overlap = (0.75, 0.75)
-    near_windows = slide_window(img_shape, (None, None), (300, None), (256, 256), overlap)
-    mid_windows = slide_window(img_shape, (None, None), (400, 550), (128, 128), overlap)
-    far_windows = slide_window(img_shape, (None, None), (400, 450), (64, 64), overlap)
+    near_windows = slide_window(img_shape, (None, None), (300, None), (256, 256), overlap, 1)
+    mid_windows = slide_window(img_shape, (None, None), (400, 550), (128, 128), overlap, 1)
+    far_windows = slide_window(img_shape, (None, None), (400, 450), (64, 64), overlap, 2)
 
     # TODO: Add weights for the window sizes: Smaller windows will get a higher weight
     windows = near_windows + mid_windows + far_windows
@@ -144,7 +151,8 @@ def create_search_windows(img_shape):
 def get_window_images(img, windows):
     window_imgs = []
     for window in windows:
-        window_img = img[window[0][1]:window[1][1], window[0][0]:window[1][0]]
+        bbox = window.bbox
+        window_img = img[bbox[0][1]:bbox[1][1], bbox[0][0]:bbox[1][0]]
         window_img = cv2.resize(window_img, MODEL_IMG_SIZE)
         #misc.imsave('test.jpg', window_img)
         window_imgs.append(window_img)
@@ -165,7 +173,7 @@ iteration = 0
 heat_map = None
 last_labels = None
 max_hmap = 0
-HEAT_MAP_THRESHOLD = 20
+HEAT_MAP_THRESHOLD = 30
 HEAT_MAP_ITERATIONS = 3
 
 def find_vehicles(img):
@@ -183,7 +191,8 @@ def find_vehicles(img):
     for idx in range(len(bool_result)):
         if bool_result[idx]:
             window = windows[idx]
-            heat_map[window[0][1]:window[1][1], window[0][0]:window[1][0]] += 1
+            bbox = window.bbox
+            heat_map[bbox[0][1]:bbox[1][1], bbox[0][0]:bbox[1][0]] += window.weight
 
     iteration += 1
     if iteration == HEAT_MAP_ITERATIONS:
