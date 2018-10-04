@@ -116,25 +116,27 @@ def slide_window(img_shape, x_start_stop, y_start_stop, xy_window, xy_overlap):
         for x in range(x_windows):
             left_top = (np.int(x_start + x * x_step), np.int(y_start + y * y_step))
             right_bottom = (np.int(left_top[0] + xy_window[0]), np.int(left_top[1] + xy_window[1]))
-            if (right_bottom[0] <= img_width and right_bottom[1] <= img_height):
-                window_list.append(((left_top, right_bottom)))
+            if right_bottom[0] <= img_width and right_bottom[1] <= img_height:
+                window_list.append((left_top, right_bottom))
 
     return window_list
 
 
 def create_search_windows(img_shape):
-    overlap = (0.5, 0.5)
-    near_windows = slide_window(img_shape, (None, None), (400, None), (256, 256), overlap)
+    overlap = (0.75, 0.75)
+    near_windows = slide_window(img_shape, (None, None), (300, None), (256, 256), overlap)
     mid_windows = slide_window(img_shape, (None, None), (400, 550), (128, 128), overlap)
     far_windows = slide_window(img_shape, (None, None), (400, 450), (64, 64), overlap)
 
     windows = near_windows + mid_windows + far_windows
 
-    #image = misc.imread('TestImages/test1.jpg')
+    #image = misc.imread('TestImages/test11.jpg')
     #draw_boxes(image, near_windows, (0, 0, 255), 6)
     #draw_boxes(image, mid_windows, (0, 255, 0), 6)
     #draw_boxes(image, far_windows, (255, 0, 0), 6)
     #misc.imsave('windows.jpg', image)
+    #exit(0)
+
     return windows
 
 
@@ -158,9 +160,19 @@ def draw_labeled_bboxes(img, labels):
         cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
 
 
+iteration = 0
+heat_map = None
+last_labels = None
+max_hmap = 0
+HEAT_MAP_THRESHOLD = 20
+HEAT_MAP_ITERATIONS = 3
+
 def find_vehicles(img):
-    #img = misc.imread('TestImages/test1.jpg')
-    heat_map = np.zeros_like(img[:, :, 0]).astype(np.float)
+    global heat_map, iteration, last_labels, max_hmap
+
+    #img = misc.imread('TestImages/test12.jpg')
+    if heat_map is None:
+        heat_map = np.zeros_like(img[:, :, 0]).astype(np.float)
 
     window_images = get_window_images(img, windows)
 
@@ -172,17 +184,27 @@ def find_vehicles(img):
             window = windows[idx]
             heat_map[window[0][1]:window[1][1], window[0][0]:window[1][0]] += 1
 
-    heat_map = np.clip(heat_map, 0, 255)
-    #misc.imsave('heatmap.jpg', heat_map)
-    heat_map[heat_map < 2] = 0
-    #misc.imsave('heatmap_threshold.jpg', heat_map)
+    iteration += 1
+    if iteration == HEAT_MAP_ITERATIONS:
+        max = np.max(heat_map)
+        if max > max_hmap:
+            max_hmap = max
+        #heat_map = np.clip(heat_map, 0, 255)
+        #misc.imsave('heatmap.jpg', heat_map)
+        heat_map[heat_map < HEAT_MAP_THRESHOLD] = 0
+        #misc.imsave('heatmap_threshold.jpg', heat_map)
 
-    labels = label(heat_map)
-    #misc.imsave('labels.jpg', labels[0])
+        labels = label(heat_map)
+        #misc.imsave('labels.jpg', labels[0])
 
-    draw_labeled_bboxes(img, labels)
+        draw_labeled_bboxes(img, labels)
+        # misc.imsave('result.jpg', img)
+        last_labels = labels
 
-    #misc.imsave('result.jpg', img)
+        iteration = 0
+        heat_map = None
+    elif last_labels is not None:
+        draw_labeled_bboxes(img, last_labels)
     return img
 
 
@@ -204,4 +226,4 @@ output_video = input_video.fl_image(find_vehicles)
 # Save the video
 output_video.write_videofile('output.mp4', audio=False)
 
-
+print(max_hmap)
