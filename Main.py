@@ -128,6 +128,7 @@ def create_search_windows(img_shape):
     mid_windows = slide_window(img_shape, (None, None), (400, 550), (128, 128), overlap)
     far_windows = slide_window(img_shape, (None, None), (400, 450), (64, 64), overlap)
 
+    # TODO: Add weights for the window sizes: Smaller windows will get a higher weight
     windows = near_windows + mid_windows + far_windows
 
     #image = misc.imread('TestImages/test11.jpg')
