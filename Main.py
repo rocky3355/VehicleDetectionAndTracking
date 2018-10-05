@@ -40,6 +40,31 @@ def create_model():
     return model
 
 
+def create_model2():
+    model = Sequential()
+    model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(64, 64, 3)))
+
+    model.add(Convolution2D(20, 5, 5, border_mode="same", input_shape=(64, 64, 3)))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+    model.add(Dropout(0.5))
+
+    # second set of CONV => RELU => POOL
+    model.add(Convolution2D(50, 5, 5, border_mode="same"))
+    model.add(Activation("relu"))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+    model.add(Dropout(0.5))
+
+    # set of FC => RELU layers
+    model.add(Flatten())
+    model.add(Dense(500))
+    model.add(Activation("relu"))
+
+    # softmax classifier
+    model.add(Dense(1))
+    model.add(Activation("softmax"))
+
+
 def load_model():
     model = keras.models.load_model(MODEL_FILE_NAME)
     return model
@@ -63,7 +88,7 @@ def train_model(model):
     images = np.array(images)
     labels = np.array(labels)
 
-    model.fit(images, labels, epochs=2, validation_split=0.2, shuffle=True)
+    model.fit(images, labels, epochs=5, validation_split=0.2, shuffle=True)
     model.save(MODEL_FILE_NAME)
 
 
@@ -132,8 +157,8 @@ def slide_window(img_shape, x_start_stop, y_start_stop, xy_window, xy_overlap, w
 def create_search_windows(img_shape):
     overlap = (0.75, 0.75)
     near_windows = slide_window(img_shape, (None, None), (300, None), (256, 256), overlap, 1)
-    mid_windows = slide_window(img_shape, (None, None), (400, 550), (128, 128), overlap, 1)
-    far_windows = slide_window(img_shape, (None, None), (400, 450), (64, 64), overlap, 2)
+    mid_windows = slide_window(img_shape, (None, None), (400, 550), (128, 128), overlap, 2)
+    far_windows = slide_window(img_shape, (None, None), (400, 450), (64, 64), overlap, 4)
 
     # TODO: Add weights for the window sizes: Smaller windows will get a higher weight
     windows = near_windows + mid_windows + far_windows
@@ -173,8 +198,8 @@ iteration = 0
 heat_map = None
 last_labels = None
 max_hmap = 0
-HEAT_MAP_THRESHOLD = 30
-HEAT_MAP_ITERATIONS = 3
+HEAT_MAP_THRESHOLD = 70
+HEAT_MAP_ITERATIONS = 5
 
 def find_vehicles(img):
     global heat_map, iteration, last_labels, max_hmap
