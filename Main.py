@@ -8,8 +8,16 @@ from moviepy.editor import VideoFileClip
 from scipy.ndimage.measurements import label
 
 
-LOAD_MODEL = False
+max_hmap = 0
+iteration = 0
+heat_map = None
+last_labels = None
+
+LOAD_MODEL = True
 MODEL_IMG_SIZE = (64, 64)
+HEAT_MAP_THRESHOLD = 120
+HEAT_MAP_ITERATIONS = 7
+MODEL_CAR_THRESHOLD = 0.75
 MODEL_FILE_NAME = 'model.h5'
 VEHICLE_IMAGES_DIR = 'TrainingData/Vehicles'
 NON_VEHICLE_IMAGES_DIR = 'TrainingData/NonVehicles'
@@ -40,36 +48,6 @@ def create_model():
     return model
 
 
-def create_model2():
-    model = Sequential()
-    model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(64, 64, 3)))
-
-    model.add(Convolution2D(20, 5, 5, border_mode="same", input_shape=(64, 64, 3)))
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-    model.add(Dropout(0.5))
-
-    # second set of CONV => RELU => POOL
-    model.add(Convolution2D(50, 5, 5, border_mode="same"))
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-    model.add(Dropout(0.5))
-
-    # set of FC => RELU layers
-    model.add(Flatten())
-    model.add(Dense(500))
-    model.add(Activation("relu"))
-
-    # softmax classifier
-    model.add(Dense(1))
-    model.add(Activation("softmax"))
-
-
-def load_model():
-    model = keras.models.load_model(MODEL_FILE_NAME)
-    return model
-
-
 def train_model(model):
     vehicle_image_files = glob.iglob(VEHICLE_IMAGES_DIR + '/**/*.png', recursive=True)
     non_vehicle_image_files = glob.iglob(NON_VEHICLE_IMAGES_DIR + '/**/*.png', recursive=True)
@@ -91,6 +69,10 @@ def train_model(model):
     model.fit(images, labels, epochs=5, validation_split=0.2, shuffle=True)
     model.save(MODEL_FILE_NAME)
 
+
+def load_model():
+    model = keras.models.load_model(MODEL_FILE_NAME)
+    return model
 
 def test_model():
     img1 = cv2.resize(misc.imread('TestImages/Car01.jpg'), MODEL_IMG_SIZE)
@@ -127,20 +109,12 @@ def slide_window(img_shape, x_start_stop, y_start_stop, xy_window, xy_overlap, w
     if y_stop is None:
         y_stop = img_height
 
-    #print('Boundaries: ({0}, {1}); ({2}, {3})'.format(x_start, y_start, x_stop, y_stop))
-
     x_span = x_stop - x_start
     y_span = y_stop - y_start
-    #print('Span: {0}, {1}'.format(x_span, y_span))
-
     x_step = xy_window[0] * (1 - xy_overlap[0])
     y_step = xy_window[1] * (1 - xy_overlap[1])
-    #print('Step: {0}, {1}'.format(x_step, y_step))
-
-    # TODO: What about rounding?
     x_windows = np.int(x_span / x_step)
     y_windows = np.int(y_span / y_step)
-    #print('#Windows: {0}, {1}'.format(x_windows, y_windows))
 
     window_list = []
     for y in range(y_windows):
@@ -194,14 +168,6 @@ def draw_labeled_bboxes(img, labels):
         cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
 
 
-iteration = 0
-heat_map = None
-last_labels = None
-max_hmap = 0
-HEAT_MAP_THRESHOLD = 100
-HEAT_MAP_ITERATIONS = 7
-MODEL_CAR_THRESHOLD = 0.7
-
 def find_vehicles(img):
     global heat_map, iteration, last_labels, max_hmap
 
@@ -251,15 +217,14 @@ else:
     train_model(model)
 
 #test_model()
-
-img_shape = (720, 1280)
-windows = create_search_windows(img_shape)
+windows = create_search_windows((720, 1280))
 
 # Load the video
 input_video = VideoFileClip('Videos/project_video.mp4')
-# Apply the lane finding algorithm to each frame
+# Apply the car finding algorithm to each frame
 output_video = input_video.fl_image(find_vehicles)
 # Save the video
 output_video.write_videofile('output.mp4', audio=False)
 
-print(max_hmap)
+# Print the max heatmap value for fine-tuning purposes
+#print('Max heatmap value: {}'.format(max_hmap))
