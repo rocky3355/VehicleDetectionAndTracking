@@ -8,7 +8,7 @@ from moviepy.editor import VideoFileClip
 from scipy.ndimage.measurements import label
 
 
-LOAD_MODEL = True
+LOAD_MODEL = False
 MODEL_IMG_SIZE = (64, 64)
 MODEL_FILE_NAME = 'model.h5'
 VEHICLE_IMAGES_DIR = 'TrainingData/Vehicles'
@@ -198,8 +198,9 @@ iteration = 0
 heat_map = None
 last_labels = None
 max_hmap = 0
-HEAT_MAP_THRESHOLD = 70
-HEAT_MAP_ITERATIONS = 5
+HEAT_MAP_THRESHOLD = 100
+HEAT_MAP_ITERATIONS = 7
+MODEL_CAR_THRESHOLD = 0.7
 
 def find_vehicles(img):
     global heat_map, iteration, last_labels, max_hmap
@@ -211,7 +212,7 @@ def find_vehicles(img):
     window_images = get_window_images(img, windows)
 
     result = model.predict(window_images)
-    bool_result = list(map(lambda x: x[0] > 0.8, result))
+    bool_result = list(map(lambda x: x[0] > MODEL_CAR_THRESHOLD, result))
 
     for idx in range(len(bool_result)):
         if bool_result[idx]:
