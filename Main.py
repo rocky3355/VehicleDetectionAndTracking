@@ -177,7 +177,7 @@ MODEL_CAR_THRESHOLD = 0.75
 def find_vehicles(img):
     global heat_map, iteration, last_labels, max_hmap
 
-    img = misc.imread('TestImages/test6.jpg')
+    #img = misc.imread('TestImages/test6.jpg')
     if heat_map is None:
         heat_map = np.zeros_like(img[:, :, 0]).astype(np.float)
 
@@ -197,17 +197,17 @@ def find_vehicles(img):
         max = np.max(heat_map)
         if max > max_hmap:
             max_hmap = max
-        heat_map = np.clip(heat_map, 0, 255)
-        misc.imsave('heatmap.jpg', heat_map)
+        #heat_map = np.clip(heat_map, 0, 255)
+        #misc.imsave('heatmap.jpg', heat_map)
         heat_map[heat_map < HEAT_MAP_THRESHOLD] = 0
-        misc.imsave('heatmap_threshold.jpg', heat_map)
+        #misc.imsave('heatmap_threshold.jpg', heat_map)
 
         labels = label(heat_map)
-        misc.imsave('labels.jpg', labels[0])
-        exit(0)
+        #misc.imsave('labels.jpg', labels[0])
 
         draw_labeled_bboxes(img, labels)
-        # misc.imsave('result.jpg', img)
+        misc.imsave('result.jpg', img)
+        exit(0)
         last_labels = labels
 
         iteration = 0
