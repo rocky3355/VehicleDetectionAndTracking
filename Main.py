@@ -177,7 +177,7 @@ MODEL_CAR_THRESHOLD = 0.75
 def find_vehicles(img):
     global heat_map, iteration, last_labels, max_hmap
 
-    #img = misc.imread('TestImages/test6.jpg')
+    img = misc.imread('TestImages/test6.jpg')
     if heat_map is None:
         heat_map = np.zeros_like(img[:, :, 0]).astype(np.float)
 
