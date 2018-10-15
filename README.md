@@ -53,11 +53,11 @@ The very first step is to create the bounding boxes for the sliding windows. Thi
 
 The input video stream is opened and each image is passed to an image processing step before writing to the output video, in order to detect vehicles. The created windows are being used to get excerpts from the source image. They get resized to 64x64 to satisfy the model input size, the model will then tell if the input shows a car or not. If it is at least 75% sure that it is a car, a beforehand created heatmap will be increased at that particular position. In doing so, the smaller windows will contribute more to the heatmap than bigger ones. This is necessary because cars that will be detected by the bigger windows will also most probably be detected by the smaller windows. Thus, the magnitudes of the hot spots on the heatmap would significantly differ for cars that are near and for cars that are far away. But a similar magnitude is required for the thresholding step. To filter out outliers, 7 frames are added up into the heatmap before evaluating for cars. The next task is to threshold the heatmap to sharpen the hot spots. Then, scipy's label function is used to create labels (i.e. cars) from the heatmap. As the heatmap is of same size as the original image, the labels' bounding boxes can be directly used to draw onto the image. Below you can see an example image, the next images show the heatmap after 7 frames, the thresholded heatmap, the labels and finally the drawn bounding boxes onto the input image.
 
+![](TestImages/test6.jpg)
 ![](OutputImages/heatmap.jpg)
 ![](OutputImages/heatmap_threshold.jpg)
 ![](OutputImages/labels.jpg)
 ![](OutputImages/result.jpg)
 
 ## Results
-
-## Conclusion
+The output video has been saved to *output.mp4*. I achieved a processing rate of about 15 frames/sec on my machine. The cars themselves get detected all the time, only the bounding boxes do not fit exactly all the time. Maybe the model architecture would have to be revisitied to achieve a better detection result for some of the windows. Also, despite frame filtering, the boxes are jittering pretty much. This happens when a window keeps exceeding and falling below the heatmap threshold. Filtering on window base could help smoothening that. Another issue occurs when two cars are close to each other. Then the labeling mechanism will create one big label due to the absence of a clear border between the hot spots. Increasing the heatmap threshold could help, but then the detection will be worse for other cases.
