@@ -28,8 +28,14 @@ If the model has been created already, the saved model will be loaded instead of
 |Dense        | Output: 10                                                |
 |Dense        | Output: 1                                                 |
 
+Below you can see example images from the training data set. A car (left) and a non-car (right) are shown.
+
+![](OutputImages/car.jpg)
+![](OutputImages/no_car.jpg)
+
 ### 2. Image processing
 Each image of the video stream will be processed by the following algorithm:
+- Get bounding boxes for sliding windows (only once)
 - Use sliding windows to get excerpts from the image
 - Scale those excerpts to fit the model input size
 - Let the model predict if the input either displays a car or not
@@ -39,6 +45,13 @@ Each image of the video stream will be processed by the following algorithm:
 - scipy is used to create labels for the distinct cars
 - Bounding boxes are being drawn around the labels
 - The image is fed to the output video stream
+
+The very first step is to create the bounding boxes for the sliding windows. This has to be done only once. I created multiple sizes of windows for different regions of the car's field of view. The lower parts of the image will be scanned by bigger sliding windows, the parts more far away by smaller windows (due to perspective the cars will be smaller there). The overlapping amounts to 0.75 for each type of window. Below you can see two images that visualize the sliding windows. The left one shows all three window sizes without overlapping, the right one shows the same, but with overlapping.
+
+![](OutputImages/windows_overlap.jpg)
+![](OutputImages/windows_no_overlap.jpg)
+
+The input video stream is opened and each image is passed to an image processing step before writing to the output video, in order to detect vehicles. 
 
 ## Results
 
