@@ -191,5 +191,3 @@ input_video = VideoFileClip('Videos/project_video.mp4')
 output_video = input_video.fl_image(find_vehicles)
 # Save the video
 output_video.write_videofile('output.mp4', audio=False)
-
-print(max_hmap)
